@@ -1,0 +1,2 @@
+# Classify .ti-files as Lua source
+*.ti linguist-language=Lua
