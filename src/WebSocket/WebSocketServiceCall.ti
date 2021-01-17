@@ -1,0 +1,38 @@
+--- Data model for a WebSocket service call
+--- @class WebSocketServiceCall : WebSocketRequest
+--- @field domain string Target domain (see [Domains].static for available domains)
+--- @field service string Target service (see *Services.static for available services)
+--- @field entity_id string Target entity ID
+--- @field serviceData table Extra data for call
+WebSocketServiceCall = {}
+class "WebSocketServiceCall" extends "WebSocketRequest" {}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketServiceCall:__init__(...)
+	self:resolve(...)
+
+	-- This class uses a static type...
+	self.type = WebSocketRequest.CALL_SERVICE
+
+	-- ...and a static data model layout
+	self.message = {
+		type = self.type,
+		domain = self.domain,
+		service = self.service,
+		service_data = {
+			entity_id = self.entity_id
+		}
+	}
+
+	-- Populate optional service data
+	if self.serviceData then
+		for k, v in pairs(self.serviceData) do
+			self.message.service_data[k] = v
+		end
+	end
+end
+
+configureConstructor({
+	orderedArguments = {"domain", "service", "entity_id", "serviceData"}
+})

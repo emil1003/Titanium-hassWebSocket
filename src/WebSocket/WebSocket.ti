@@ -1,0 +1,314 @@
+--- Creates and manages a WebSocket connection
+--- (using http.websocket from [CC:Tweaked](https://tweaked.cc)) to Home Assistant instance.
+--- See [Home Assistant WebSocket API Documentation](https://developers.home-assistant.io/docs/api/websocket/)
+--- for more.
+--- @class WebSocket : Class
+--- @field CALLBACK_CONNECTION_CHANGED string
+--- @field CALLBACK_AUTH_REQUESTED string
+--- @field CALLBACK_AUTHENTICATED string
+--- @field HEARTBEAT_SCHEDULE_NAME string
+--- @field HEARTBEAT_INTERVAL number
+--- @field url string WebSocket endpoint URL (constructor arg 1)
+--- @field apiToken string Home Assistant API Token (constructor arg 2)
+--- @field application Application Application instance (constructor arg 3)
+--- @field awaitingResult table<number, WebSocketRequest> Table of requests awaiting a result
+--- @field subscriptions table<number, WebSocketSubscription> Table of currently kept subscriptions
+--- @field ws websocket WebSocket handle
+--- @field isOpen boolean Whether the WebSocket connection is open
+--- @field isAuthenticated boolean Whether server has authenticated our API Token
+--- @field id number Internal command ID tracker
+--- @field hooked boolean Whether WebSocket is hooked to an application instance
+WebSocket = {}
+class "WebSocket" mixin "MCallbackManager" {
+	static = {
+		CALLBACK_CONNECTION_CHANGED = "connection_changed",
+		CALLBACK_AUTH_REQUESTED = "auth_requested",
+		CALLBACK_AUTHENTICATED = "authenticated",
+
+		HEARTBEAT_SCHEDULE_NAME = "websocket_heartbeat",
+		HEARTBEAT_INTERVAL = 20
+	},
+
+	awaitingResult = {},
+	subscriptions = {},
+
+	id = 0
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocket:__init__(...)
+	self:resolve(...)
+
+	-- If application passed in constructor, hook immediately
+	if self.application then
+		self:hook(self.application)
+	end
+end
+
+--- Hook into Application instance
+--- @param application Application
+function WebSocket:hook(application)
+	-- If already hooked, bail
+	if self.hooked then return end
+
+	-- Bind event names to classes
+	Event.bindEvent(WebSocketEvent.SUCCESS, "WebSocketEvent")
+	Event.bindEvent(WebSocketEvent.FAILURE, "WebSocketEvent")
+	Event.bindEvent(WebSocketEvent.CLOSED, "WebSocketEvent")
+	Event.bindEvent(WebSocketEvent.MESSAGE, "WebSocketMessage")
+
+	-- Hook event callbacks to handler
+	for _, eName in ipairs({WebSocketEvent.SUCCESS, WebSocketEvent.FAILURE, WebSocketEvent.MESSAGE, WebSocketEvent.CLOSED}) do
+		application:on(eName, function(_, e)
+			self:handle(e)
+		end)
+	end
+
+	-- Setup heartbeat loop
+	-- TODO: Only start heartbeat when connected and authenticated
+	application:schedule(function()
+		if self.isOpen then
+			self:ping()
+		end
+	end, WebSocket.HEARTBEAT_INTERVAL, true, WebSocket.HEARTBEAT_SCHEDULE_NAME)
+
+	-- Keep application
+	self.application = application
+	self.hooked = true
+end
+
+--- Initialize server connection
+function WebSocket:connect()
+	if self.isOpen or not self.url then
+		error("Attempt to open WebSocket which is already open, or url not set")
+	end
+
+	-- http.websocketAsync returns connection instance in event queue
+	http.websocketAsync(self.url)
+end
+
+--- Close WebSocket connection, queue close event and kill heartbeat
+function WebSocket:close()
+	if not self.isOpen then return end
+
+	self.ws.close()
+
+	-- Notify listeners
+	-- SUGGEST: Application:handle? Potentially synchronous/blocking
+	os.queueEvent(WebSocketEvent.CLOSED)
+
+	if self.application then
+		self.application:unschedule(WebSocket.HEARTBEAT_SCHEDULE_NAME)
+	end
+end
+
+--- Send a message on the WebSocket connection. Note: Calling this function manually
+--- does not provide callbacks for requests and subscriptions, use :request and :subscribe instead
+--- @param message WebSocketRequest|table Message/request to be sent
+--- @param noIncrement boolean If true, don't increment and append command ID
+--- @return number Assigned command ID (or nil if noIncrement)
+function WebSocket:send(message, noIncrement)
+	if Titanium.typeOf(message, "WebSocketRequest", true) then
+		message = message.message
+	end
+
+	if not self.isOpen then return end
+
+	if not noIncrement then
+		-- Home Assistant expects a command ID that increments every time
+		-- We handle it here
+		self.id = self.id + 1
+
+		-- Modify message to contain command ID
+		message["id"] = self.id
+	end
+
+	-- Encode message to JSON string
+	-- TODO: Graceful error handling
+	local o = JSON.encode(message)
+
+	self.ws.send(o)
+
+	return noIncrement and nil or self.id
+end
+
+--- Send Home Assistant authentication message
+--- @param authToken string Home Assistant API Token
+function WebSocket:authenticate(authToken)
+	if not authToken then
+		error("Bad argument #1 to 'authenticate' (expected string, got "..type(authToken)..")")
+	end
+
+	-- Avoid sending authentication when authenticated
+	if self.isAuthenticated then return end
+
+	-- Setup WebSocket message
+	local r = WebSocketRequest(WebSocketRequest.AUTH, {
+		access_token = authToken
+	})
+
+	-- Authentication does not expect command ID
+	self:send(r, true)
+end
+
+--- Send a ping message (heartbeat)
+function WebSocket:ping()
+	-- This is purely meant to be used as an internal heartbeat.
+	-- If a callback is wanted, send WebSocketRequest(WebSocketRequest.PING)
+	-- Setup Ping message
+	local r = WebSocketRequest(WebSocketRequest.PING)
+
+	self:send(r)
+end
+
+--- Send a WebSocket request, and listen for responses to it
+--- @param request WebSocketRequest
+--- @return boolean Request accepted
+function WebSocket:request(request)
+	if not Titanium.typeOf(request, "WebSocketRequest", true) then
+		error("Bad argument #1 to 'request' (expected table/WebSocketRequest, got "..type(request)..")")
+	end
+
+	local id = self:send(request)
+	if not id then return false end
+
+	request.id = id
+	self.awaitingResult[id] = request
+
+	return true
+end
+
+--- Subscribe to and keep track of a subscription
+--- @param subscription WebSocketSubscription
+--- @return boolean Subscription was requested
+function WebSocket:subscribe(subscription)
+	if not Titanium.typeOf(subscription, "WebSocketSubscription", true) then
+		error("Bad argument #1 to 'subscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
+	end
+
+	if subscription.subscribed then return false end
+
+	-- Send to get next command ID
+	local id = self:send(subscription)
+	if not id then return false end
+
+	-- Add ID to subscription and insert at ID pos in subscriptions
+	subscription.id = id
+	self.subscriptions[id] = subscription
+
+	return true
+end
+
+--- Unsubscribe from an active subscription
+--- @param subscription WebSocketSubscription
+--- @return boolean Unsubscribe requested
+function WebSocket:unsubscribe(subscription)
+	if not Titanium.typeOf(subscription, "WebSocketSubscription" , true) then
+		error("Bad argument #1 to 'unsubscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
+	end
+
+	if not subscription.subscribed then return false end
+
+	-- We make our own WebSocketRequest for unsubscribing
+	local unsubReq = WebSocketRequest(WebSocketRequest.UNSUBSCRIBE_EVENTS, {
+		subscription = subscription.id -- ID of the subscription to cancel
+	})
+
+	-- We need to know if unsubscribing was successful
+	unsubReq:on(WebSocketRequest.CALLBACK_RESULT, function(s, e)
+		local sub = self.subscriptions[s.message.subscription]
+		if e.data["success"] then
+			-- Let listeners know
+			sub.subscribed = false
+			sub:executeCallbacks(WebSocketSubscription.CALLBACK_UNSUBSCRIBED)
+
+			-- Sub finished, remove
+			self.subscriptions[s.message.subscription] = nil
+		end
+	end)
+
+	local id = self:request(unsubReq)
+	if not id then return false end
+
+	return true
+end
+
+--- Handle a WebSocket event
+--- @param e WebSocketEvent|WebSocketMessage
+function WebSocket:handle(e)
+	-- Handle message event
+	if Titanium.typeOf(e, "WebSocketMessage", true) then
+		--- @type WebSocketMessage
+		local event = e
+
+		-- If parsing failed, this message is unusable
+		if not event.type then return end
+
+		if event.type == WebSocketMessage.AUTH_REQUIRED then
+			-- Server requests authentication
+			-- If we have the API token, send it
+			if self.apiToken then
+				self:authenticate(self.apiToken)
+			else
+				-- Let implementor handle auth
+				self:executeCallbacks(WebSocket.CALLBACK_AUTH_REQUESTED)
+			end
+		elseif event.type == WebSocketMessage.AUTH_OK then
+			-- Only when authenticated can commands be sent
+			self.isAuthenticated = true
+			self:executeCallbacks(WebSocket.CALLBACK_AUTHENTICATED)
+		elseif event.type == WebSocketMessage.RESULT then
+			-- Check if subscription was accepted
+			local sub = self.subscriptions[event.id]
+			-- SUGGEST: Callback if subscription failed?
+			if sub and event.data["success"] then
+				sub.subscribed = true
+				sub:executeCallbacks(WebSocketSubscription.CALLBACK_SUBSCRIBED)
+				return
+			end
+
+			-- Check if request got result
+			local req = self.awaitingResult[event.id]
+			if req then
+				req:executeCallbacks(WebSocketRequest.CALLBACK_RESULT, event)
+
+				-- Requests are one-shot, remove from queue
+				self.awaitingResult[req.id] = nil
+			end
+		elseif event.type == WebSocketMessage.EVENT then
+			-- Find target subscription and execute callbacks
+			if self.subscriptions[event.id] then
+				self.subscriptions[event.id]:executeCallbacks(WebSocketSubscription.CALLBACK_EVENT, event)
+			end
+		end
+
+	-- Handle CC events
+	elseif Titanium.typeOf(e, "WebSocketEvent", true) then
+		--- @type WebSocketEvent
+		local event = e
+		-- SUGGEST: WebSocketEvent.FAILURE case
+		if event.name == WebSocketEvent.SUCCESS then
+			-- Avoid phantom events
+			if self.isOpen then return end
+			self.isOpen = true
+
+			-- When a connection is opened, field 3 (message)
+			-- of the event contains WebSocket handle
+			self.ws = event.message
+
+			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
+		elseif event.name == WebSocketEvent.CLOSED then
+			-- Avoid phantom events
+			if not self.isOpen then return end
+			self.isOpen = false
+			self.isAuthenticated = false
+
+			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
+		end
+	end
+end
+
+configureConstructor({
+	orderedArguments = {"url", "apiToken", "application"}
+})

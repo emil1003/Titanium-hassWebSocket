@@ -1,0 +1,36 @@
+--- Manages a WebSocket event subscription, for listening to events on the Home Assistant instance
+--- @class WebSocketSubscription : WebSocketRequest
+--- @field EVENT_STATE_CHANGED string
+--- @field CALLBACK_SUBSCRIBED string
+--- @field CALLBACK_UNSUBSCRIBED string
+--- @field CALLBACK_EVENT string
+--- @field eventType string Event type being subscribed to (see WebSocketSubscription.static for available types)
+--- @field subscribed boolean Whether WebSocket instance has confirmed that this subscription is active
+WebSocketSubscription = {}
+class "WebSocketSubscription" extends "WebSocketRequest" {
+	static = {
+		EVENT_STATE_CHANGED = "state_changed",
+		-- TODO: Add event types
+
+		CALLBACK_SUBSCRIBED = "subscribed",
+		CALLBACK_UNSUBSCRIBED = "unsubscribed",
+		CALLBACK_EVENT = "event"
+	}
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketSubscription:__init__(...)
+	self:resolve(...)
+	self.type = WebSocketRequest.SUBSCRIBE_EVENTS
+
+	-- Compile request table
+	self.message = {
+		type = self.type,
+		event_type = self.eventType
+	}
+end
+
+configureConstructor({
+	orderedArguments = {"eventType"}
+})

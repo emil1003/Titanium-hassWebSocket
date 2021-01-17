@@ -1,0 +1,28 @@
+--- Data model for a WebSocket event (regular CC events)
+--- @class WebSocketEvent : Event
+--- @field SUCCESS string
+--- @field FAILURE string
+--- @field CLOSED string
+--- @field MESSAGE string
+--- @field name string Event name (see WebSocketEvent.static for available types)
+--- @field url string Event origin URL
+--- @field message string Event message
+WebSocketEvent = {}
+class "WebSocketEvent" extends "Event" {
+	static = {
+		SUCCESS = "websocket_success",
+		FAILURE = "websocket_failure",
+		CLOSED = "websocket_closed",
+		MESSAGE = "websocket_message"
+	}
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketEvent:__init__(...)
+	self:resolve(...)
+end
+
+configureConstructor({
+	orderedArguments = {"name", "url", "message"}
+})

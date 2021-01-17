@@ -1,0 +1,14 @@
+--- @class Services
+Services = {}
+class "Services" {
+	static = {
+		media_player = {
+			MEDIA_PLAY_PAUSE = "media_play_pause",
+			MEDIA_NEXT_TRACK = "media_next_track",
+			MEDIA_PREVIOUS_TRACK = "media_previous_track",
+			VOLUME_SET = "volume_set",
+			SHUFFLE_SET = "shuffle_set",
+			REPEAT_SET = "repeat_set"
+		}
+	}
+} abstract()

@@ -1,0 +1,9 @@
+--- @class Domains
+--- @field MEDIA_PLAYER string
+Domains = {}
+class "Domains" {
+	static = {
+		MEDIA_PLAYER = "media_player",
+		-- TODO: Add other domains
+	}
+} abstract()

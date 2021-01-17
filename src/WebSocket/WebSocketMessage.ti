@@ -1,0 +1,55 @@
+--- Data model for a WebSocket response message
+--- @class WebSocketMessage : WebSocketEvent
+--- @field AUTH_REQUIRED string
+--- @field AUTH_OK string
+--- @field AUTH_INVALID string
+--- @field RESULT string
+--- @field EVENT string
+--- @field PONG string
+--- @field type string Response type (see WebSocketMessage.static for available types)
+--- @field id number Parsed response command ID (ID of calling request)
+--- @field data table Parsed response data
+WebSocketMessage = {}
+class "WebSocketMessage" extends "WebSocketEvent" {
+	static = {
+		AUTH_REQUIRED = "auth_required",
+		AUTH_OK = "auth_ok",
+		AUTH_INVALID = "auth_invalid",
+		RESULT = "result",
+		EVENT = "event",
+		PONG = "pong"
+	}
+	-- SUGGEST: Event.data already defined, rename?
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketMessage:__init__(...)
+	self:resolve(...)
+
+	-- Attempt to parse message
+	pcall(function()
+		-- JSON decode is unsafe
+		self.data = JSON.decode(self.message)
+
+		-- Depends on JSON decode, unreachable if it fails
+		self.type = self.data["type"]
+
+		-- Only result/event/pong type has command ID
+		if self.data["id"] then
+			self.id = tonumber(self.data["id"])
+		end
+	end)
+end
+
+--- Get event data (if message is of type 'event')
+--- @return table Event data
+function WebSocketMessage:getEventData()
+	if self.type ~= WebSocketMessage.EVENT or not self.data then return end
+
+	return self.data["event"]["data"]
+end
+
+configureConstructor({
+	orderedArguments = {"name", "url", "message"}
+})

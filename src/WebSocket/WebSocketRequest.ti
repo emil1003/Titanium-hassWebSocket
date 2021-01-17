@@ -1,0 +1,42 @@
+--- Creates a request with data for sending to Home Assistant instance
+--- @class WebSocketRequest : Class
+--- @field AUTH string
+--- @field SUBSCRIBE_EVENTS string
+--- @field UNSUBSCRIBE_EVENTS string
+--- @field CALL_SERVICE string
+--- @field GET_STATES string
+--- @field GET_CONFIG string
+--- @field GET_PANELS string
+--- @field PING string
+--- @field CALLBACK_RESULT string
+--- @field type string Request type (see WebSocketRequest.static for available types)
+--- @field message table Message (as JSON-able table) to send
+--- @field id number Automatically assigned command ID (given at send-time)
+WebSocketRequest = {}
+class "WebSocketRequest" mixin "MCallbackManager" {
+	static = {
+		AUTH = "auth",
+		SUBSCRIBE_EVENTS = "subscribe_events",
+		UNSUBSCRIBE_EVENTS = "unsubscribe_events",
+		CALL_SERVICE = "call_service",
+		GET_STATES = "get_states",
+		GET_CONFIG = "get_config",
+		GET_PANELS = "get_panels",
+		PING = "ping",
+
+		CALLBACK_RESULT = "result"
+	},
+
+	message = {}
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketRequest:__init__(...)
+	self:resolve(...)
+	self.message.type = self.type
+end
+
+configureConstructor({
+	orderedArguments = {"type", "message"}
+})
