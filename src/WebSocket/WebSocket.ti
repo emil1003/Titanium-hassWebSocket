@@ -66,9 +66,8 @@ function WebSocket:hook(application)
 	end
 
 	-- Setup heartbeat loop
-	-- TODO: Only start heartbeat when connected and authenticated
 	application:schedule(function()
-		if self.isOpen then
+		if self.isOpen and self.isAuthenticated then
 			self:ping()
 		end
 	end, WebSocket.HEARTBEAT_INTERVAL, true, WebSocket.HEARTBEAT_SCHEDULE_NAME)
