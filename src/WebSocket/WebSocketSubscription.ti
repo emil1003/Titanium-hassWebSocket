@@ -6,7 +6,7 @@
 --- @field CALLBACK_EVENT string
 --- @field eventType string Event type being subscribed to (see WebSocketSubscription.static for available types)
 --- @field subscribed boolean Whether WebSocket instance has confirmed that this subscription is active
---- @field filters table<string, boolean> If not empty, only allow events from entity_ids in this table
+--- @field filters string[] If not empty, only allow events where entity_id matches any entry (with string.find)
 WebSocketSubscription = {}
 class "WebSocketSubscription" extends "WebSocketRequest" {
 	static = {
@@ -39,11 +39,11 @@ end
 function WebSocketSubscription:filter(ids)
 	if type(ids) == "string" then
 		-- Single filter entry
-		self.filters[ids] = true
+		table.insert(self.filters, ids)
 	elseif type(ids) == "table" then
 		-- Multiple entries in non-indexed table
 		for _, id in ipairs(ids) do
-			self.filters[id] = true
+			table.insert(self.filters, id)
 		end
 	else
 		error("Bad argument #1 to 'filter' (expected string or table, got "..type(ids)..")")
