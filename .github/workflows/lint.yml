@@ -1,0 +1,22 @@
+name: Lint
+
+# Run on push and pull_request
+on:
+  push:
+  pull_request:
+
+  workflow_dispatch:
+
+jobs:
+  luacheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run luacheck
+        uses: nebularg/actions-luacheck@v1.1.0
+        with:
+          files: src/
+          args: --include-files "**/*.ti" --no-global --no-max-line-length
