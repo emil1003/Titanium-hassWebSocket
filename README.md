@@ -73,6 +73,10 @@ Subscribe to serverside events:
 -- Subscribe to "state_changed" events
 subscription = WebSocketSubscription(WebSocketSubscription.EVENT_STATE_CHANGED)
 
+-- Filter events based on 'entity_id'
+-- Here, only allow events from 'light.living_room' entity and all in 'media_player' domain
+subscription:filter("light.living_room", "media_player.")
+
 -- Get events in callback
 subscription:on(WebSocketSubscription.CALLBACK_EVENT, function(self, event)
     print(event:getEventData()["entity_id"]) -- entity_id of the entity that changed
