@@ -6,6 +6,7 @@
 --- @field CALLBACK_EVENT string
 --- @field eventType string Event type being subscribed to (see WebSocketSubscription.static for available types)
 --- @field subscribed boolean Whether WebSocket instance has confirmed that this subscription is active
+--- @field filters string[] If not empty, only allow events where entity_id matches any entry (with string.find)
 WebSocketSubscription = {}
 class "WebSocketSubscription" extends "WebSocketRequest" {
 	static = {
@@ -15,7 +16,9 @@ class "WebSocketSubscription" extends "WebSocketRequest" {
 		CALLBACK_SUBSCRIBED = "subscribed",
 		CALLBACK_UNSUBSCRIBED = "unsubscribed",
 		CALLBACK_EVENT = "event"
-	}
+	},
+
+	filters = {}
 }
 
 --- Resolve constructor arguments
@@ -29,6 +32,19 @@ function WebSocketSubscription:__init__(...)
 		type = self.type,
 		event_type = self.eventType
 	}
+end
+
+--- Add expression(s) to filter list
+--- @vararg string
+function WebSocketSubscription:filter(...)
+	local expressions = {...}
+	for i, expr in ipairs(expressions) do
+		if type(expr) ~= "string" then
+			error("Bad argument #"..i.." to 'filter' (expected string, got "..type(expr)..")")
+		end
+
+		table.insert(self.filters, expr)
+	end
 end
 
 configureConstructor({
