@@ -34,19 +34,16 @@ function WebSocketSubscription:__init__(...)
 	}
 end
 
---- Add entity_ids to filter
---- @param ids string|table ids to add to filter
-function WebSocketSubscription:filter(ids)
-	if type(ids) == "string" then
-		-- Single filter entry
-		table.insert(self.filters, ids)
-	elseif type(ids) == "table" then
-		-- Multiple entries in non-indexed table
-		for _, id in ipairs(ids) do
-			table.insert(self.filters, id)
+--- Add expression(s) to filter list
+--- @vararg string
+function WebSocketSubscription:filter(...)
+	local expressions = {...}
+	for i, expr in ipairs(expressions) do
+		if type(expr) ~= "string" then
+			error("Bad argument #"..i.." to 'filter' (expected string, got "..type(expr)..")")
 		end
-	else
-		error("Bad argument #1 to 'filter' (expected string or table, got "..type(ids)..")")
+
+		table.insert(self.filters, expr)
 	end
 end
 
