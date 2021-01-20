@@ -125,7 +125,10 @@ function WebSocket:send(message, noIncrement)
 
 	-- Encode message to JSON string
 	-- TODO: Graceful error handling
-	local o = JSON.encode(message)
+	local o = textutils.serializeJSON(message)
+
+	-- If serializeJSON failed, bail
+	if not o then return end
 
 	self.ws.send(o)
 
