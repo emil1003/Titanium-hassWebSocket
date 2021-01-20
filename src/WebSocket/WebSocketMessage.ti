@@ -29,8 +29,9 @@ function WebSocketMessage:__init__(...)
 
 	-- Attempt to parse message
 	pcall(function()
-		-- JSON decode is unsafe
-		self.data = JSON.decode(self.message)
+		-- JSON decode may fail
+		-- In that case, anyone downstream should drop this message
+		self.data = textutils.unserializeJSON(self.message)
 
 		-- Depends on JSON decode, unreachable if it fails
 		self.type = self.data["type"]
