@@ -32,7 +32,10 @@ class "WebSocket" mixin "MCallbackManager" {
 	awaitingResult = {},
 	subscriptions = {},
 
-	id = 0
+	isOpen = false,
+	isAuthenticated = false,
+	id = 0,
+	hooked = false
 }
 
 --- Resolve constructor arguments
