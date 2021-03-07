@@ -43,6 +43,12 @@ function WebSocketMessage:__init__(...)
 	end)
 end
 
+--- Get result field of message (if present)
+--- @return table Message result field
+function WebSocketMessage:getResult()
+	return self.data["result"]
+end
+
 --- Get event data (if message is of type 'event')
 --- @return table Event data
 function WebSocketMessage:getEventData()
