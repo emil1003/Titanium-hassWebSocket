@@ -84,8 +84,14 @@ end
 
 --- Initialize server connection
 function WebSocket:connect()
-	if self.isOpen or not self.url then
-		error("Attempt to open WebSocket which is already open, or url not set")
+	-- Check that we're not already open
+	if self.isOpen then
+		error("Attempt to call :connect on already open WebSocket", 3)
+	end
+
+	-- Ensure we have an URL
+	if not self.url then
+		error("Attempt to call :connect on WebSocket with no URL set", 3)
 	end
 
 	-- http.websocketAsync returns connection instance in event queue
