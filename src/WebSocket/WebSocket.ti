@@ -100,7 +100,10 @@ end
 
 --- Close WebSocket connection, queue close event and kill heartbeat
 function WebSocket:close()
-	if not self.isOpen then return end
+	-- Check that we're not already closed
+	if not self.isOpen then
+		error("Attempt to call :close on already closed WebSocket", 3)
+	end
 
 	self.ws.close()
 
