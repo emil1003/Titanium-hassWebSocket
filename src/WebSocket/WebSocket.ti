@@ -161,7 +161,9 @@ function WebSocket:authenticate(authToken)
 	end
 
 	-- Avoid sending authentication when authenticated
-	if self.isAuthenticated then return end
+	if self.isAuthenticated then
+		error("Attempt to call :authenticate on already authenticated WebSocket", 3)
+	end
 
 	-- Setup WebSocket message
 	local r = WebSocketRequest(WebSocketRequest.AUTH, {
