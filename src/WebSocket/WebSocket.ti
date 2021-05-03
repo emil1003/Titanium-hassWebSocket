@@ -244,6 +244,9 @@ end
 --- Handle a WebSocket event
 --- @param e WebSocketEvent|WebSocketMessage
 function WebSocket:handle(e)
+	-- Drop event if url doesn't match ours
+	if e.url ~= self.url then return end
+
 	-- Handle message event
 	if Titanium.typeOf(e, "WebSocketMessage", true) then
 		--- @type WebSocketMessage
