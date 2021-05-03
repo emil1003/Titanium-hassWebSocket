@@ -1,9 +1,8 @@
 name: Lint
 
-# Run on push and pull_request
+# Run on push
 on:
   push:
-  pull_request:
 
   workflow_dispatch:
 
