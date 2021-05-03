@@ -328,6 +328,7 @@ function WebSocket:handle(e)
 			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
 		elseif event.name == WebSocketEvent.FAILURE then
 			-- Opening WebSocket connection failed
+			self.isOpen = false
 			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_FAILURE, event.message)
 		elseif event.name == WebSocketEvent.CLOSED then
 			-- Avoid phantom events
