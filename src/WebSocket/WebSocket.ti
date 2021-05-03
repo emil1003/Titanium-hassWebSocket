@@ -4,6 +4,7 @@
 --- for more.
 --- @class WebSocket : Class
 --- @field CALLBACK_CONNECTION_CHANGED string
+--- @field CALLBACK_CONNECTION_FAILURE string
 --- @field CALLBACK_AUTH_REQUESTED string
 --- @field CALLBACK_AUTHENTICATED string
 --- @field HEARTBEAT_SCHEDULE_NAME string
@@ -22,6 +23,7 @@ WebSocket = {}
 class "WebSocket" mixin "MCallbackManager" {
 	static = {
 		CALLBACK_CONNECTION_CHANGED = "connection_changed",
+		CALLBACK_CONNECTION_FAILURE = "connection_failure",
 		CALLBACK_AUTH_REQUESTED = "auth_requested",
 		CALLBACK_AUTHENTICATED = "authenticated",
 
@@ -313,7 +315,7 @@ function WebSocket:handle(e)
 	elseif Titanium.typeOf(e, "WebSocketEvent", true) then
 		--- @type WebSocketEvent
 		local event = e
-		-- SUGGEST: WebSocketEvent.FAILURE case
+
 		if event.name == WebSocketEvent.SUCCESS then
 			-- Avoid phantom events
 			if self.isOpen then return end
@@ -324,6 +326,10 @@ function WebSocket:handle(e)
 			self.ws = event.message
 
 			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
+		elseif event.name == WebSocketEvent.FAILURE then
+			-- Opening WebSocket connection failed
+			self.isOpen = false
+			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_FAILURE, event.message)
 		elseif event.name == WebSocketEvent.CLOSED then
 			-- Avoid phantom events
 			if not self.isOpen then return end
