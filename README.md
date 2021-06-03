@@ -18,7 +18,7 @@ class_sources = {
 Create WebSocket instance:
 
 ```lua
-webSocket = WebSocket("wss://<Home Assisant address>/api/websocket", "<API Token>")
+webSocket = WebSocket("wss://<Home Assistant address>/api/websocket", "<API Token>")
 
 -- Connect WebSocket to your Application for events
 webSocket:hook(Application)
