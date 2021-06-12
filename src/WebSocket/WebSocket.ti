@@ -249,16 +249,13 @@ function WebSocket:unsubscribe(subscription)
 end
 
 --- Handle a WebSocket event
---- @param e WebSocketEvent|WebSocketMessage
-function WebSocket:handle(e)
+--- @param event WebSocketEvent|WebSocketMessage
+function WebSocket:handle(event)
 	-- Drop event if url doesn't match ours
-	if e.url ~= self.url then return end
+	if event.url ~= self.url then return end
 
 	-- Handle message event
-	if Titanium.typeOf(e, "WebSocketMessage", true) then
-		--- @type WebSocketMessage
-		local event = e
-
+	if Titanium.typeOf(event, "WebSocketMessage", true) then
 		-- If parsing failed, this message is unusable
 		if not event.type then return end
 
@@ -322,10 +319,7 @@ function WebSocket:handle(e)
 		end
 
 	-- Handle CC events
-	elseif Titanium.typeOf(e, "WebSocketEvent", true) then
-		--- @type WebSocketEvent
-		local event = e
-
+	elseif Titanium.typeOf(event, "WebSocketEvent", true) then
 		if event.name == WebSocketEvent.SUCCESS then
 			-- Avoid phantom events
 			if self.isOpen then return end
