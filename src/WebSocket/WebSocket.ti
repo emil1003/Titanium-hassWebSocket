@@ -52,8 +52,12 @@ function WebSocket:__init__(...)
 end
 
 --- Hook into Application instance
---- @param application Application
-function WebSocket:hook(application)
+--- @param app Application
+function WebSocket:hook(app)
+	if not Titanium.typeOf(app, "Application", true) then
+		error("Bad argument #1 to 'hook' (expected Application, got "..type(request)..")", 3)
+	end
+
 	-- If already hooked, bail
 	if self.hooked then return end
 
@@ -65,20 +69,20 @@ function WebSocket:hook(application)
 
 	-- Hook event callbacks to handler
 	for _, eName in ipairs({WebSocketEvent.SUCCESS, WebSocketEvent.FAILURE, WebSocketEvent.MESSAGE, WebSocketEvent.CLOSED}) do
-		application:on(eName, function(_, e)
+		app:on(eName, function(_, e)
 			self:handle(e)
 		end)
 	end
 
 	-- Setup heartbeat loop
-	application:schedule(function()
+	app:schedule(function()
 		if self.isOpen and self.isAuthenticated then
 			self:ping()
 		end
 	end, WebSocket.HEARTBEAT_INTERVAL, true, WebSocket.HEARTBEAT_SCHEDULE_NAME)
 
-	-- Keep application
-	self.application = application
+	-- Keep application reference
+	self.application = app
 	self.hooked = true
 end
 
