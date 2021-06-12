@@ -19,6 +19,7 @@
 --- @field isAuthenticated boolean Whether server has authenticated our API Token
 --- @field id number Internal command ID tracker
 --- @field hooked boolean Whether WebSocket is hooked to an application instance
+--- @field identifier string Instance identifier ("websocket_<ID>")
 WebSocket = {}
 class "WebSocket" mixin "MCallbackManager" {
 	static = {
@@ -27,7 +28,6 @@ class "WebSocket" mixin "MCallbackManager" {
 		CALLBACK_AUTH_REQUESTED = "auth_requested",
 		CALLBACK_AUTHENTICATED = "authenticated",
 
-		HEARTBEAT_SCHEDULE_NAME = "websocket_heartbeat",
 		HEARTBEAT_INTERVAL = 20
 	},
 
@@ -44,6 +44,9 @@ class "WebSocket" mixin "MCallbackManager" {
 --- @vararg any
 function WebSocket:__init__(...)
 	self:resolve(...)
+
+	-- Set instance identifier
+	self.identifier = "websocket_"..self.__ID
 
 	-- If application passed in constructor, hook immediately
 	if self.application then
@@ -71,7 +74,7 @@ function WebSocket:hook(app)
 	for _, eName in ipairs({WebSocketEvent.SUCCESS, WebSocketEvent.FAILURE, WebSocketEvent.MESSAGE, WebSocketEvent.CLOSED}) do
 		app:on(eName, function(_, e)
 			self:handle(e)
-		end)
+		end, self.identifier)
 	end
 
 	-- Setup heartbeat loop
@@ -79,7 +82,7 @@ function WebSocket:hook(app)
 		if self.isOpen and self.isAuthenticated then
 			self:ping()
 		end
-	end, WebSocket.HEARTBEAT_INTERVAL, true, WebSocket.HEARTBEAT_SCHEDULE_NAME)
+	end, WebSocket.HEARTBEAT_INTERVAL, true, self.identifier)
 
 	-- Keep application reference
 	self.application = app
@@ -107,7 +110,7 @@ function WebSocket:close()
 	os.queueEvent(WebSocketEvent.CLOSED)
 
 	if self.application then
-		self.application:unschedule(WebSocket.HEARTBEAT_SCHEDULE_NAME)
+		self.application:unschedule(self.identifier)
 	end
 end
 
