@@ -80,7 +80,8 @@ function WebSocket:hook(app)
 	-- Setup heartbeat loop
 	app:schedule(function()
 		if self.isOpen and self.isAuthenticated then
-			self:ping()
+			local r = WebSocketRequest(WebSocketRequest.PING)
+			self:send(r)
 		end
 	end, WebSocket.HEARTBEAT_INTERVAL, true, self.identifier)
 
@@ -164,16 +165,6 @@ function WebSocket:authenticate(authToken)
 
 	-- Authentication does not expect command ID
 	self:send(r, true)
-end
-
---- Send a ping message (heartbeat)
-function WebSocket:ping()
-	-- This is purely meant to be used as an internal heartbeat.
-	-- If a callback is wanted, send WebSocketRequest(WebSocketRequest.PING)
-	-- Setup Ping message
-	local r = WebSocketRequest(WebSocketRequest.PING)
-
-	self:send(r)
 end
 
 --- Send a WebSocket request, and listen for responses to it
