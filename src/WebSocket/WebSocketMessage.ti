@@ -8,6 +8,7 @@
 --- @field PONG string
 --- @field type string Response type (see WebSocketMessage.static for available types)
 --- @field id number Parsed response command ID (ID of calling request)
+--- @field success boolean Response success state
 --- @field data table Parsed response data
 WebSocketMessage = {}
 class "WebSocketMessage" extends "WebSocketEvent" {
@@ -36,10 +37,11 @@ function WebSocketMessage:__init__(...)
 		-- Depends on JSON decode, unreachable if it fails
 		self.type = self.data["type"]
 
+		-- Get success state
+		self.success = self.data["success"]
+
 		-- Only result/event/pong type has command ID
-		if self.data["id"] then
-			self.id = tonumber(self.data["id"])
-		end
+		self.id = tonumber(self.data["id"])
 	end)
 end
 
