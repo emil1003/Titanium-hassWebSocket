@@ -92,8 +92,14 @@ end
 
 --- Initialize server connection
 function WebSocket:connect()
-	if self.isOpen or not self.url then
-		error("Attempt to open WebSocket which is already open, or url not set")
+	-- Check that we're not already open
+	if self.isOpen then
+		error("Attempt to call :connect on already open WebSocket", 3)
+	end
+
+	-- Ensure we have an URL
+	if not self.url then
+		error("Attempt to call :connect on WebSocket with no URL set", 3)
 	end
 
 	-- http.websocketAsync returns connection instance in event queue
@@ -102,7 +108,10 @@ end
 
 --- Close WebSocket connection, queue close event and kill heartbeat
 function WebSocket:close()
-	if not self.isOpen then return end
+	-- Check that we're not already closed
+	if not self.isOpen then
+		error("Attempt to call :close on already closed WebSocket", 3)
+	end
 
 	self.ws.close()
 
@@ -125,7 +134,10 @@ function WebSocket:send(message, noIncrement)
 		message = message.message
 	end
 
-	if not self.isOpen then return end
+	-- Ensure WebSocket is even open
+	if not self.isOpen then
+		error("Attempt to call :send on closed WebSocket", 3)
+	end
 
 	if not noIncrement then
 		-- Home Assistant expects a command ID that increments every time
@@ -137,11 +149,12 @@ function WebSocket:send(message, noIncrement)
 	end
 
 	-- Encode message to JSON string
-	-- TODO: Graceful error handling
 	local o = textutils.serializeJSON(message)
 
 	-- If serializeJSON failed, bail
-	if not o then return end
+	if not o then
+		error("textutils.serializeJSON produced nil value")
+	end
 
 	self.ws.send(o)
 
@@ -156,7 +169,9 @@ function WebSocket:authenticate(authToken)
 	end
 
 	-- Avoid sending authentication when authenticated
-	if self.isAuthenticated then return end
+	if self.isAuthenticated then
+		error("Attempt to call :authenticate on already authenticated WebSocket", 3)
+	end
 
 	-- Setup WebSocket message
 	local r = WebSocketRequest(WebSocketRequest.AUTH, {
