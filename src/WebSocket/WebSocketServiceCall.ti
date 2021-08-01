@@ -3,7 +3,7 @@
 --- @field domain string Target domain (see [Domains].static for available domains)
 --- @field service string Target service (see *Services.static for available services)
 --- @field entity_id string Target entity ID
---- @field serviceData table Extra data for call
+--- @field serviceData table<string, any> Extra data for call
 WebSocketServiceCall = {}
 class "WebSocketServiceCall" extends "WebSocketRequest" {}
 
@@ -12,10 +12,21 @@ class "WebSocketServiceCall" extends "WebSocketRequest" {}
 function WebSocketServiceCall:__init__(...)
 	self:resolve(...)
 
-	-- This class uses a static type...
+	-- This class uses a static type
 	self.type = WebSocketRequest.CALL_SERVICE
 
-	-- ...and a static data model layout
+	-- If properties passed in constructor, construct message immediately
+	if self.domain and self.service then
+		self:constructMessage()
+	end
+end
+
+--- Construct message from properties
+--- @return table Constructed message
+function WebSocketServiceCall:constructMessage()
+	-- SUGGEST: nil checks?
+
+	-- Construct message
 	self.message = {
 		type = self.type,
 		domain = self.domain,
@@ -31,8 +42,11 @@ function WebSocketServiceCall:__init__(...)
 			self.message.service_data[k] = v
 		end
 	end
+
+	return self.message
 end
 
 configureConstructor({
-	orderedArguments = {"domain", "service", "entity_id", "serviceData"}
+	orderedArguments = {"domain", "service", "entity_id", "serviceData"},
+	argumentTypes = {domain = "string", service = "string", entity_id = "string", service_data = "table"}
 })
