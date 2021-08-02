@@ -24,7 +24,9 @@ end
 --- Construct message from properties
 --- @return table Constructed message
 function WebSocketServiceCall:constructMessage()
-	-- SUGGEST: nil checks?
+	if not self.domain or not self.service then
+		error("Attempt to construct message without domain and service", 3)
+	end
 
 	-- Construct message
 	self.message = {
