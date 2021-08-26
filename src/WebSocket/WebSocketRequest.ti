@@ -1,5 +1,5 @@
 --- Creates a request with data for sending to Home Assistant instance
---- @class WebSocketRequest : Class
+--- @class WebSocketRequest : MCallbackManager
 --- @field AUTH string
 --- @field SUBSCRIBE_EVENTS string
 --- @field UNSUBSCRIBE_EVENTS string

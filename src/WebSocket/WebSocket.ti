@@ -2,7 +2,7 @@
 --- (using http.websocket from [CC:Tweaked](https://tweaked.cc)) to Home Assistant instance.
 --- See [Home Assistant WebSocket API Documentation](https://developers.home-assistant.io/docs/api/websocket/)
 --- for more.
---- @class WebSocket : Class
+--- @class WebSocket : MCallbackManager
 --- @field CALLBACK_CONNECTION_CHANGED string
 --- @field CALLBACK_CONNECTION_FAILURE string
 --- @field CALLBACK_AUTH_REQUESTED string
