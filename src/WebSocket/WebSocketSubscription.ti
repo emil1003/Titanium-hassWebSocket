@@ -1,5 +1,6 @@
 --- Manages a WebSocket event subscription, for listening to events on the Home Assistant instance
 --- @class WebSocketSubscription : WebSocketRequest
+--- @field super WebSocketRequest
 --- @field EVENT_STATE_CHANGED string
 --- @field CALLBACK_SUBSCRIBED string
 --- @field CALLBACK_UNSUBSCRIBED string
@@ -32,6 +33,14 @@ function WebSocketSubscription:__init__(...)
 		type = self.type,
 		event_type = self.eventType
 	}
+end
+
+--- Attach a callback function to be run when an event of the subscribed type occurs
+--- @param fn fun(self: WebSocketSubscription, event: WebSocketMessage): void
+--- @param id string
+--- @return WebSocketRequest
+function WebSocketSubscription:doOnEvent(fn, id)
+	return self:on(WebSocketSubscription.CALLBACK_EVENT, fn, id)
 end
 
 --- Add expression(s) to filter list

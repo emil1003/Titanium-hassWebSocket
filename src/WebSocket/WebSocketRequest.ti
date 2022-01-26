@@ -1,5 +1,6 @@
 --- Creates a request with data for sending to Home Assistant instance
 --- @class WebSocketRequest : MCallbackManager
+--- @field super MCallbackManager
 --- @field AUTH string
 --- @field SUBSCRIBE_EVENTS string
 --- @field UNSUBSCRIBE_EVENTS string
@@ -35,6 +36,14 @@ class "WebSocketRequest" mixin "MCallbackManager" {
 function WebSocketRequest:__init__(...)
 	self:resolve(...)
 	self.message.type = self.type
+end
+
+--- Attach a callback function to be run when result event occurs
+--- @param fn fun(self: WebSocketRequest, result: WebSocketMessage): void
+--- @param id string
+--- @return WebSocketRequest
+function WebSocketRequest:doOnResult(fn, id)
+	return self:on(WebSocketRequest.CALLBACK_RESULT, fn, id)
 end
 
 configureConstructor({
