@@ -56,6 +56,32 @@ function WebSocketSubscription:filter(...)
 	end
 end
 
+--- Handle a WebSocket message
+--- @param message WebSocketMessage
+function WebSocketSubscription:handle(message)
+	-- If we have filters, handle them
+	if next(self.filters) then
+		local data = message:getEventData()
+
+		-- If event data not decoded, bail
+		if not data then return end
+
+		-- Search filters for match
+		local match = false
+		for _, key in ipairs(self.filters) do
+			if string.find(data["entity_id"], key) then
+				match = true
+				break
+			end
+		end
+
+		-- If no match, drop event
+		if not match then return end
+	end
+
+	self:executeCallbacks(WebSocketSubscription.CALLBACK_EVENT, message)
+end
+
 configureConstructor({
 	orderedArguments = {"eventType"}
 })

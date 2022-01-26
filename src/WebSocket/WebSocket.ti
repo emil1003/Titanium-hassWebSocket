@@ -300,27 +300,7 @@ function WebSocket:handle(event)
 			-- Find target subscription and execute callbacks
 			local sub = self.subscriptions[event.id]
 			if sub then
-				-- If subscription has filters, check it
-				if next(sub.filters) then
-					local data = event:getEventData()
-
-					-- If event data not decoded, bail
-					if not data then return end
-
-					-- Search filters for match
-					local match = false
-					for _, key in ipairs(sub.filters) do
-						if string.find(data["entity_id"], key) then
-							match = true
-							break
-						end
-					end
-
-					-- If no match, drop event
-					if not match then return end
-				end
-
-				sub:executeCallbacks(WebSocketSubscription.CALLBACK_EVENT, event)
+				sub:handle(event)
 			end
 		end
 
