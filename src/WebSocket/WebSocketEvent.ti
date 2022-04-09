@@ -4,9 +4,9 @@
 --- @field FAILURE string
 --- @field CLOSED string
 --- @field MESSAGE string
---- @field name string Event name (see WebSocketEvent.static for available types)
---- @field url string Event origin URL
---- @field message string Event message
+--- @field name string @Event name (see [WebSocketEvent].static for available types)
+--- @field url string @Event origin URL
+--- @field message string @Event message
 WebSocketEvent = {}
 class "WebSocketEvent" extends "Event" {
 	static = {

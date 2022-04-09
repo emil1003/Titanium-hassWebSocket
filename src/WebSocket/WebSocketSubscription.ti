@@ -5,9 +5,9 @@
 --- @field CALLBACK_SUBSCRIBED string
 --- @field CALLBACK_UNSUBSCRIBED string
 --- @field CALLBACK_EVENT string
---- @field eventType string Event type being subscribed to (see WebSocketSubscription.static for available types)
---- @field subscribed boolean Whether WebSocket instance has confirmed that this subscription is active
---- @field filters string[] If not empty, only allow events where entity_id matches any entry (with string.find)
+--- @field eventType string @Event type being subscribed to (see WebSocketSubscription.static for available types)
+--- @field subscribed boolean @Whether WebSocket instance has confirmed that this subscription is active
+--- @field filters string[] @If not empty, only allow events where entity_id matches any entry (with string.find)
 WebSocketSubscription = {}
 class "WebSocketSubscription" extends "WebSocketRequest" {
 	static = {
@@ -44,7 +44,7 @@ function WebSocketSubscription:doOnEvent(fn, id)
 end
 
 --- Add expression(s) to filter list
---- @vararg string
+--- @vararg string @Expressions to add
 function WebSocketSubscription:filter(...)
 	local expressions = {...}
 	for i, expr in ipairs(expressions) do
@@ -57,7 +57,7 @@ function WebSocketSubscription:filter(...)
 end
 
 --- Handle a WebSocket message
---- @param message WebSocketMessage
+--- @param message WebSocketMessage @Message to handle
 function WebSocketSubscription:handle(message)
 	-- If we have filters, handle them
 	if next(self.filters) then

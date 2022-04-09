@@ -9,17 +9,17 @@
 --- @field CALLBACK_AUTHENTICATED string
 --- @field HEARTBEAT_SCHEDULE_NAME string
 --- @field HEARTBEAT_INTERVAL number
---- @field url string WebSocket endpoint URL (constructor arg 1)
---- @field apiToken string Home Assistant API Token (constructor arg 2)
---- @field application Application Application instance (constructor arg 3)
---- @field awaitingResult table<number, WebSocketRequest> Table of requests awaiting a result
---- @field subscriptions table<number, WebSocketSubscription> Table of currently kept subscriptions
---- @field ws websocket WebSocket handle
---- @field isOpen boolean Whether the WebSocket connection is open
---- @field isAuthenticated boolean Whether server has authenticated our API Token
---- @field id number Internal command ID tracker
---- @field hooked boolean Whether WebSocket is hooked to an application instance
---- @field identifier string Instance identifier ("websocket_<ID>")
+--- @field url string @WebSocket endpoint URL (constructor arg 1)
+--- @field apiToken string @Home Assistant API Token (constructor arg 2)
+--- @field application Application @Application instance (constructor arg 3)
+--- @field awaitingResult table<number, WebSocketRequest> @Table of requests awaiting a result
+--- @field subscriptions table<number, WebSocketSubscription> @Table of currently kept subscriptions
+--- @field ws websocket @WebSocket handle
+--- @field isOpen boolean @Whether the WebSocket connection is open
+--- @field isAuthenticated boolean @Whether server has authenticated our API Token
+--- @field id number @Internal command ID tracker
+--- @field hooked boolean @Whether WebSocket is hooked to an application instance
+--- @field identifier string @Instance identifier ("websocket_<ID>")
 WebSocket = {}
 class "WebSocket" mixin "MCallbackManager" {
 	static = {
@@ -55,7 +55,7 @@ function WebSocket:__init__(...)
 end
 
 --- Hook into Application instance
---- @param app Application
+--- @param app Application @Application to hook
 function WebSocket:hook(app)
 	if not Titanium.typeOf(app, "Application", true) then
 		error("Bad argument #1 to 'hook' (expected Application, got "..type(request)..")", 3)
@@ -124,11 +124,11 @@ function WebSocket:close()
 	end
 end
 
---- Send a message on the WebSocket connection. Note: Calling this function manually
+--- Send a message on the WebSocket connection. **Note**: Calling this function manually
 --- does not provide callbacks for requests and subscriptions, use :request and :subscribe instead
---- @param message WebSocketRequest|table Message/request to be sent
---- @param noIncrement boolean If true, don't increment and append command ID
---- @return number Assigned command ID (or nil if noIncrement)
+--- @param message WebSocketRequest|table @Message/request to be sent
+--- @param noIncrement boolean @If true, don't increment and append command ID
+--- @return number @Assigned command ID (or nil if noIncrement)
 function WebSocket:send(message, noIncrement)
 	if Titanium.typeOf(message, "WebSocketRequest", true) then
 		message = message.message
@@ -162,7 +162,7 @@ function WebSocket:send(message, noIncrement)
 end
 
 --- Send Home Assistant authentication message
---- @param authToken string Home Assistant API Token
+--- @param authToken string @Home Assistant API Token
 function WebSocket:authenticate(authToken)
 	if not authToken then
 		error("Bad argument #1 to 'authenticate' (expected string, got "..type(authToken)..")")
@@ -183,8 +183,8 @@ function WebSocket:authenticate(authToken)
 end
 
 --- Send a WebSocket request, and listen for responses to it
---- @param request WebSocketRequest
---- @return boolean Request accepted
+--- @param request WebSocketRequest @Request to send
+--- @return boolean @Request sent
 function WebSocket:request(request)
 	if not Titanium.typeOf(request, "WebSocketRequest", true) then
 		error("Bad argument #1 to 'request' (expected table/WebSocketRequest, got "..type(request)..")")
@@ -200,8 +200,8 @@ function WebSocket:request(request)
 end
 
 --- Subscribe to and keep track of a subscription
---- @param subscription WebSocketSubscription
---- @return boolean Subscription was requested
+--- @param subscription WebSocketSubscription @Subscription to subscribe to
+--- @return boolean @Subscription was requested
 function WebSocket:subscribe(subscription)
 	if not Titanium.typeOf(subscription, "WebSocketSubscription", true) then
 		error("Bad argument #1 to 'subscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
@@ -221,8 +221,8 @@ function WebSocket:subscribe(subscription)
 end
 
 --- Unsubscribe from an active subscription
---- @param subscription WebSocketSubscription
---- @return boolean Unsubscribe requested
+--- @param subscription WebSocketSubscription @Subscription to unsubscribe from
+--- @return boolean @Unsubscribe requested
 function WebSocket:unsubscribe(subscription)
 	if not Titanium.typeOf(subscription, "WebSocketSubscription" , true) then
 		error("Bad argument #1 to 'unsubscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
@@ -255,7 +255,7 @@ function WebSocket:unsubscribe(subscription)
 end
 
 --- Handle a WebSocket event
---- @param event WebSocketEvent|WebSocketMessage
+--- @param event WebSocketEvent|WebSocketMessage @Event to handle
 function WebSocket:handle(event)
 	-- Drop event if url doesn't match ours
 	if event.url ~= self.url then return end

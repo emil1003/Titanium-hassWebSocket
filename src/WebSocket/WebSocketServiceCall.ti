@@ -1,9 +1,9 @@
 --- Data model for a WebSocket service call
 --- @class WebSocketServiceCall : WebSocketRequest
---- @field domain string Target domain (see [Domains].static for available domains)
---- @field service string Target service (see *Services.static for available services)
---- @field entity_id string Target entity ID
---- @field serviceData table<string, any> Extra data for call
+--- @field domain string @Target domain (see [Domains].static for available domains)
+--- @field service string @Target service (see *Services.static for available services)
+--- @field entity_id string @Target entity ID
+--- @field serviceData table<string, any> @Extra data for call
 WebSocketServiceCall = {}
 class "WebSocketServiceCall" extends "WebSocketRequest" {}
 
@@ -22,7 +22,7 @@ function WebSocketServiceCall:__init__(...)
 end
 
 --- Construct message from properties
---- @return table Constructed message
+--- @return table @Constructed message
 function WebSocketServiceCall:constructMessage()
 	if not self.domain or not self.service then
 		error("Attempt to construct message without domain and service", 3)

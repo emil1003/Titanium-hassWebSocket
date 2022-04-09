@@ -6,10 +6,10 @@
 --- @field RESULT string
 --- @field EVENT string
 --- @field PONG string
---- @field type string Response type (see WebSocketMessage.static for available types)
---- @field id number Parsed response command ID (ID of calling request)
---- @field success boolean Response success state
---- @field data table Parsed response data
+--- @field type string @Response type (see WebSocketMessage.static for available types)
+--- @field id number @Parsed response command ID (ID of calling request)
+--- @field success boolean @Response success state
+--- @field data table @Parsed response data
 WebSocketMessage = {}
 class "WebSocketMessage" extends "WebSocketEvent" {
 	static = {
@@ -46,13 +46,13 @@ function WebSocketMessage:__init__(...)
 end
 
 --- Get result field of message (if present)
---- @return table Message result field
+--- @return table @Message result field
 function WebSocketMessage:getResult()
 	return self.data["result"]
 end
 
 --- Get event data (if message is of type 'event')
---- @return table Event data
+--- @return table @Event data
 function WebSocketMessage:getEventData()
 	if self.type ~= WebSocketMessage.EVENT or not self.data then return end
 
