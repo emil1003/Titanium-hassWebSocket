@@ -14,7 +14,7 @@
 --- @field application Application @Application instance (constructor arg 3)
 --- @field awaitingResult table<number, WebSocketRequest> @Table of requests awaiting a result
 --- @field subscriptions table<number, WebSocketSubscription> @Table of currently kept subscriptions
---- @field ws websocket @WebSocket handle
+--- @field ws http.Websocket @WebSocket handle
 --- @field isOpen boolean @Whether the WebSocket connection is open
 --- @field isAuthenticated boolean @Whether server has authenticated our API Token
 --- @field id number @Internal command ID tracker
@@ -64,15 +64,16 @@ function WebSocket:hook(app)
 	-- If already hooked, bail
 	if self.hooked then return end
 
-	-- Bind event names to classes
-	Event.bindEvent(WebSocketEvent.SUCCESS, "WebSocketEvent")
-	Event.bindEvent(WebSocketEvent.FAILURE, "WebSocketEvent")
-	Event.bindEvent(WebSocketEvent.CLOSED, "WebSocketEvent")
-	Event.bindEvent(WebSocketEvent.MESSAGE, "WebSocketMessage")
+	--- @type WebSocketEvent[]
+	local eventTypes = {WebSocketSuccessEvent, WebSocketFailureEvent, WebSocketClosedEvent, WebSocketMessageEvent}
 
-	-- Hook event callbacks to handler
-	for _, eName in ipairs({WebSocketEvent.SUCCESS, WebSocketEvent.FAILURE, WebSocketEvent.MESSAGE, WebSocketEvent.CLOSED}) do
-		app:on(eName, function(_, e)
+	-- Handle event hooking
+	for _, type in ipairs(eventTypes) do
+		-- Bind event names to classes
+		Event.bindEvent(type.EVENT_NAME, type.__type)
+
+		-- Hook event callbacks to handler
+		app:on(type.EVENT_NAME, function(_, e)
 			self:handle(e)
 		end, self.identifier)
 	end
@@ -255,17 +256,25 @@ function WebSocket:unsubscribe(subscription)
 end
 
 --- Handle a WebSocket event
---- @param event WebSocketEvent|WebSocketMessage @Event to handle
+--- @param event WebSocketEvent @Event to handle
 function WebSocket:handle(event)
+	-- Ensure param is an event
+	if not Titanium.typeOf(event, WebSocketEvent.__type, true) then
+		error("Bad argument #1 to 'handle' (expected typeof WebSocketEvent)", 3)
+	end
+
 	-- Drop event if url doesn't match ours
 	if event.url ~= self.url then return end
 
-	-- Handle message event
-	if Titanium.typeOf(event, "WebSocketMessage", true) then
-		-- If parsing failed, this message is unusable
-		if not event.type then return end
+	-- Handle event
+	if event:is(WebSocketMessageEvent.EVENT_NAME) then
+		--- @type WebSocketMessageEvent
+		local message = event
 
-		if event.type == WebSocketMessage.AUTH_REQUIRED then
+		-- If parsing failed, this message is unusable
+		if not message.type then return end
+
+		if message.type == WebSocketMessageEvent.TYPE_AUTH_REQUIRED then
 			-- Server requests authentication
 			-- If we have the API token, send it
 			if self.apiToken then
@@ -274,60 +283,60 @@ function WebSocket:handle(event)
 				-- Let implementor handle auth
 				self:executeCallbacks(WebSocket.CALLBACK_AUTH_REQUESTED)
 			end
-		elseif event.type == WebSocketMessage.AUTH_OK then
+		elseif message.type == WebSocketMessageEvent.TYPE_AUTH_OK then
 			-- Only when authenticated can commands be sent
 			self.isAuthenticated = true
 			self:executeCallbacks(WebSocket.CALLBACK_AUTHENTICATED)
-		elseif event.type == WebSocketMessage.RESULT then
+		elseif message.type == WebSocketMessageEvent.TYPE_EVENT then
 			-- Check if subscription was accepted
-			local sub = self.subscriptions[event.id]
+			local sub = self.subscriptions[message.id]
 			-- SUGGEST: Callback if subscription failed?
-			if sub and event.data["success"] then
+			if sub and message.data["success"] then
 				sub.subscribed = true
 				sub:executeCallbacks(WebSocketSubscription.CALLBACK_SUBSCRIBED)
 				return
 			end
 
 			-- Check if request got result
-			local req = self.awaitingResult[event.id]
+			local req = self.awaitingResult[message.id]
 			if req then
-				req:executeCallbacks(WebSocketRequest.CALLBACK_RESULT, event)
+				req:executeCallbacks(WebSocketRequest.CALLBACK_RESULT, message)
 
 				-- Requests are one-shot, remove from queue
 				self.awaitingResult[req.id] = nil
 			end
-		elseif event.type == WebSocketMessage.EVENT then
+		elseif message.type == WebSocketMessageEvent.TYPE_EVENT then
 			-- Find target subscription and execute callbacks
-			local sub = self.subscriptions[event.id]
+			local sub = self.subscriptions[message.id]
 			if sub then
-				sub:handle(event)
+				sub:handle(message)
 			end
 		end
+	elseif event:is(WebSocketSuccessEvent.EVENT_NAME) then
+		--- @type WebSocketSuccessEvent
+		local successEvent = event
+		-- Avoid phantom events
+		if self.isOpen then return end
+		self.isOpen = true
 
-	-- Handle CC events
-	elseif Titanium.typeOf(event, "WebSocketEvent", true) then
-		if event.name == WebSocketEvent.SUCCESS then
-			-- Avoid phantom events
-			if self.isOpen then return end
-			self.isOpen = true
+		-- WebSocketSuccessEvent contains a ready WebSocket handle
+		self.ws = successEvent.websocket
 
-			-- When a connection is opened, field 3 (message)
-			-- of the event contains WebSocket handle
-			self.ws = event.message
+		self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
+	elseif event:is(WebSocketFailureEvent.EVENT_NAME) then
+		--- @type WebSocketFailureEvent
+		local failureEvent = event
 
-			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
-		elseif event.name == WebSocketEvent.FAILURE then
-			-- Opening WebSocket connection failed
-			self.isOpen = false
-			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_FAILURE, event.message)
-		elseif event.name == WebSocketEvent.CLOSED then
-			-- Avoid phantom events
-			if not self.isOpen then return end
-			self.isOpen = false
-			self.isAuthenticated = false
+		-- Opening WebSocket connection failed
+		self.isOpen = false
+		self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_FAILURE, failureEvent.error)
+	elseif event:is(WebSocketClosedEvent.EVENT_NAME) then
+		-- Avoid phantom events
+		if not self.isOpen then return end
+		self.isOpen = false
+		self.isAuthenticated = false
 
-			self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
-		end
+		self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
 	end
 end
 
