@@ -1,0 +1,13 @@
+--- Model for a successful WebSocket connection event
+--- @class WebSocketSuccessEvent : WebSocketEvent
+--- @field public websocket http.Websocket @WebSocket handle
+WebSocketSuccessEvent = {}
+class "WebSocketSuccessEvent" extends "WebSocketEvent" {
+	static = {
+		EVENT_NAME = "websocket_success"
+	}
+}
+
+configureConstructor({
+	orderedArguments = {"name", "url", "websocket"}
+})

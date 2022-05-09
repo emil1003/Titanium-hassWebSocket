@@ -1,0 +1,16 @@
+--- Model for a WebSocket connection failure event
+--- @class WebSocketFailureEvent : WebSocketEvent
+--- @field public error string @Error message
+WebSocketFailureEvent = {}
+class "WebSocketFailureEvent" extends "WebSocketEvent" {
+	static = {
+		EVENT_NAME = "websocket_failure"
+	}
+}
+
+configureConstructor({
+	orderedArguments = {"name", "url", "error"},
+	argumentTypes = {
+		error = "string"
+	}
+})
