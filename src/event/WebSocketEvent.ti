@@ -4,9 +4,9 @@
 --- @field FAILURE string
 --- @field CLOSED string
 --- @field MESSAGE string
---- @field name string @Event name (see [WebSocketEvent].static for available types)
---- @field url string @Event origin URL
---- @field message string @Event message
+--- @field public EVENT_NAME string @Name for this event type
+--- @field public name string @Event name (see [WebSocketEvent].static for available types)
+--- @field public url string @Event origin URL
 WebSocketEvent = {}
 class "WebSocketEvent" extends "Event" {
 	static = {
@@ -15,7 +15,7 @@ class "WebSocketEvent" extends "Event" {
 		CLOSED = "websocket_closed",
 		MESSAGE = "websocket_message"
 	}
-}
+} abstract()
 
 --- Resolve constructor arguments
 --- @vararg any
@@ -24,5 +24,10 @@ function WebSocketEvent:__init__(...)
 end
 
 configureConstructor({
-	orderedArguments = {"name", "url", "message"}
+	orderedArguments = {"name", "url"},
+	requiredArguments = {"name", "url"},
+	argumentTypes = {
+		name = "string",
+		url = "string"
+	}
 })
