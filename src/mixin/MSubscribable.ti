@@ -1,0 +1,56 @@
+--- Mixin to make an object subscribable
+--- @class MSubscribable : MRequestable
+--- @field CALLBACK_SUBSCRIPTION_CHANGED string
+--- @field CALLBACK_EVENT string
+--- @field public subscribed boolean @Whether WebSocket instance has confirmed that this subscription is active
+MSubscribable = {}
+class "MSubscribable" mixin "MRequestable" {
+	static = {
+		CALLBACK_SUBSCRIPTION_CHANGED = "subscription_changed",
+		CALLBACK_EVENT = "event",
+	},
+
+	subscribed = false
+} abstract()
+
+--- Attach a callback function to be run when an event of the subscribed type occurs
+--- @generic T : MSubscribable
+--- @param s T
+--- @param fn fun(self: T, event: WebSocketMessage): void @Callback function
+--- @param id string @Callback ID
+--- @return T @Self
+function MSubscribable.doOnEvent(s, fn, id)
+	return s:on(MSubscribable.CALLBACK_EVENT, fn, id)
+end
+
+--- Attach a callback function to be run when subscription status changes
+--- @generic T : MSubscribable
+--- @param s T
+--- @param fn fun(self: T, status: boolean): void @Callback function
+--- @param id string @Callback ID
+--- @return T @Self
+function MSubscribable.doOnSubscriptionChanged(s, fn, id)
+	return s:on(MSubscribable.CALLBACK_SUBSCRIPTION_CHANGED, fn, id)
+end
+
+--- Handle result message
+--- @param message WebSocketMessage @Message to handle
+function MSubscribable:handleResult(message)
+	-- A result for a subscribable can only indicate that subscription status changed
+	if message.success ~= self.subscribed then
+		self.subscribed = message.success
+		self:executeCallbacks(MSubscribable.CALLBACK_SUBSCRIPTION_CHANGED, message.success)
+	end
+end
+
+--- Handle an event message
+--- @param message WebSocketMessage @Event message to handle
+function MSubscribable:handleEvent(message)
+	self:executeCallbacks(MSubscribable.CALLBACK_EVENT, message)
+end
+
+configureConstructor({
+	argumentTypes = {
+		eventType = "string"
+	}
+})
