@@ -36,7 +36,7 @@ function WebSocketSubscription:__init__(...)
 end
 
 --- Attach a callback function to be run when an event of the subscribed type occurs
---- @param fn fun(self: WebSocketSubscription, event: WebSocketMessage): void
+--- @param fn fun(self: WebSocketSubscription, event: WebSocketMessageEvent): void
 --- @param id string
 --- @return WebSocketRequest
 function WebSocketSubscription:doOnEvent(fn, id)
@@ -57,7 +57,7 @@ function WebSocketSubscription:filter(...)
 end
 
 --- Handle a WebSocket message
---- @param message WebSocketMessage @Message to handle
+--- @param message WebSocketMessageEvent @Message to handle
 function WebSocketSubscription:handle(message)
 	-- If we have filters, handle them
 	if next(self.filters) then
