@@ -23,7 +23,7 @@ end
 --- Attach a callback function to be run when result event occurs
 --- @generic T : MRequestable
 --- @param s T
---- @param fn fun(self: T, result: WebSocketMessage): void @Callback function
+--- @param fn fun(self: T, result: WebSocketMessageEvent): void @Callback function
 --- @param id string @Callback ID
 --- @return T @Self
 function MRequestable.doOnResult(s, fn, id)
@@ -31,7 +31,7 @@ function MRequestable.doOnResult(s, fn, id)
 end
 
 --- Handle result message
---- @param message WebSocketMessage @Message to handle
+--- @param message WebSocketMessageEvent @Message to handle
 function MRequestable:handleResult(message)
 	self:executeCallbacks(MRequestable.CALLBACK_RESULT, message)
 end
