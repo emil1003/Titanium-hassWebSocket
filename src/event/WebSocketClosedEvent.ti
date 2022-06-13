@@ -1,0 +1,12 @@
+--- Model for a WebSocket connection closed event
+--- @class WebSocketClosedEvent : WebSocketEvent
+WebSocketClosedEvent = {}
+class "WebSocketClosedEvent" extends "WebSocketEvent" {
+	static = {
+		EVENT_NAME = "websocket_closed"
+	}
+}
+
+configureConstructor({
+	orderedArguments = {"name", "url"}
+})

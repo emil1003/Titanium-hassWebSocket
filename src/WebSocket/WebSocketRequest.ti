@@ -45,7 +45,7 @@ function WebSocketRequest:__init__(...)
 end
 
 --- Attach a callback function to be run when result event occurs
---- @param fn fun(self: WebSocketRequest, result: WebSocketMessage): void @Callback function
+--- @param fn fun(self: WebSocketRequest, result: WebSocketMessageEvent): void @Callback function
 --- @param id string @Callback ID
 --- @return WebSocketRequest @Self
 function WebSocketRequest:doOnResult(fn, id)

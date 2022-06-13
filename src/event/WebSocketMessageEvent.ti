@@ -1,0 +1,71 @@
+--- Model for a WebSocket message event
+--- @class WebSocketMessageEvent : WebSocketEvent
+--- @field TYPE_AUTH_REQUIRED string
+--- @field TYPE_AUTH_OK string
+--- @field TYPE_AUTH_INVALID string
+--- @field TYPE_RESULT string
+--- @field TYPE_EVENT string
+--- @field TYPE_PONG string
+--- @field public message string @Raw message text
+--- @field public binary boolean @Whether this is a binary message
+--- @field public type string @Message type (see WebSocketMessage.static for available types)
+--- @field public id number @Parsed message command ID (ID of calling request)
+--- @field public success boolean @Message success state
+--- @field public data MessageModel @Parsed message data
+WebSocketMessageEvent = {}
+class "WebSocketMessageEvent" extends "WebSocketEvent" {
+	static = {
+		EVENT_NAME = "websocket_message",
+		TYPE_AUTH_REQUIRED = "auth_required",
+		TYPE_AUTH_OK = "auth_ok",
+		TYPE_AUTH_INVALID = "auth_invalid",
+		TYPE_RESULT = "result",
+		TYPE_EVENT = "event",
+		TYPE_PONG = "pong"
+	}
+	-- SUGGEST: Event.data already defined, rename?
+}
+
+--- Resolve constructor arguments
+--- @vararg any
+function WebSocketMessageEvent:__init__(...)
+	self:resolve(...)
+
+	-- Attempt to parse message
+	pcall(function()
+		-- JSON decode may fail
+		-- In that case, anyone downstream should drop this message
+		self.data = textutils.unserializeJSON(self.message)
+
+		-- Depends on JSON decode, unreachable if it fails
+		self.type = self.data["type"]
+
+		-- Get success state
+		self.success = self.data["success"]
+
+		-- Only result/event/pong type has command ID
+		self.id = tonumber(self.data["id"])
+	end)
+end
+
+--- Get result field of message (if present)
+--- @return table @Message result field
+function WebSocketMessageEvent:getResult()
+	return self.data["result"]
+end
+
+--- Get event data (if message is of type 'event')
+--- @return EventData @Event data
+function WebSocketMessageEvent:getEventData()
+	if self.type ~= WebSocketMessageEvent.TYPE_EVENT or not self.data then return end
+
+	return self.data["event"]["data"]
+end
+
+configureConstructor({
+	orderedArguments = {"name", "url", "message", "binary"},
+	argumentTypes = {
+		message = "string",
+		binary = "boolean"
+	}
+})
