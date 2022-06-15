@@ -107,7 +107,7 @@ function WebSocket:connect()
 	http.websocketAsync(self.url)
 end
 
---- Close WebSocket connection, queue close event and kill heartbeat
+--- Close WebSocket connection and kill heartbeat
 function WebSocket:close()
 	-- Check that we're not already closed
 	if not self.isOpen then
@@ -115,10 +115,6 @@ function WebSocket:close()
 	end
 
 	self.ws.close()
-
-	-- Notify listeners
-	-- SUGGEST: Application:handle? Potentially synchronous/blocking
-	os.queueEvent(WebSocketEvent.CLOSED)
 
 	if self.application then
 		self.application:unschedule(self.identifier)
