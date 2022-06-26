@@ -1,0 +1,12 @@
+version: 2
+updates:
+    # Check actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "workflow"
+      include: "scope"
+    assignees:
+      - "emil1003"
