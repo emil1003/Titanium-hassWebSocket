@@ -36,6 +36,9 @@ end
 --- Handle result message
 --- @param message WebSocketMessageEvent @Message to handle
 function MSubscribable:handleResult(message)
+	-- Overrides function in MRequestable
+	self:executeCallbacks(MRequestable.CALLBACK_RESULT, message)
+
 	-- A result for a subscribable can only indicate that subscription status changed
 	if message.success ~= self.subscribed then
 		self.subscribed = message.success
