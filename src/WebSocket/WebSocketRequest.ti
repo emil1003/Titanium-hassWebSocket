@@ -38,5 +38,9 @@ function WebSocketRequest:__init__(...)
 end
 
 configureConstructor({
-	orderedArguments = {"type", "message"}
+	orderedArguments = {"type", "message"},
+	argumentTypes = {
+		type = "string",
+		message = "table"
+	}
 })

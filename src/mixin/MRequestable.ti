@@ -35,10 +35,3 @@ end
 function MRequestable:handleResult(message)
 	self:executeCallbacks(MRequestable.CALLBACK_RESULT, message)
 end
-
-configureConstructor({
-	argumentTypes = {
-		type = "string",
-		message = "table"
-	}
-})

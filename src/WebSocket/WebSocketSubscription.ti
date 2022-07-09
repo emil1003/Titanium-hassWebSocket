@@ -77,5 +77,8 @@ function WebSocketSubscription:handleEvent(message)
 end
 
 configureConstructor({
-	orderedArguments = {"eventType"}
+	orderedArguments = {"eventType"},
+	argumentTypes = {
+		eventType = "string"
+	}
 })

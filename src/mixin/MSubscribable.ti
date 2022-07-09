@@ -48,9 +48,3 @@ end
 function MSubscribable:handleEvent(message)
 	self:executeCallbacks(MSubscribable.CALLBACK_EVENT, message)
 end
-
-configureConstructor({
-	argumentTypes = {
-		eventType = "string"
-	}
-})
