@@ -58,7 +58,7 @@ end
 --- @param app Application @Application to hook
 function WebSocket:hook(app)
 	if not Titanium.typeOf(app, "Application", true) then
-		error("Bad argument #1 to 'hook' (expected Application, got "..type(request)..")", 3)
+		error("Bad argument #1 to 'hook' (expected Application)", 3)
 	end
 
 	-- If already hooked, bail
