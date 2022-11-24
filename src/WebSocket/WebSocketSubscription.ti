@@ -1,19 +1,19 @@
 --- Manages a WebSocket event subscription, for listening to events on the Home Assistant instance
---- @class WebSocketSubscription : WebSocketRequest
+--- @class WebSocketSubscription : MSubscribable
 --- @field super WebSocketRequest
 --- @field EVENT_STATE_CHANGED string
 --- @field CALLBACK_SUBSCRIBED string
 --- @field CALLBACK_UNSUBSCRIBED string
 --- @field CALLBACK_EVENT string
 --- @field eventType string @Event type being subscribed to (see WebSocketSubscription.static for available types)
---- @field subscribed boolean @Whether WebSocket instance has confirmed that this subscription is active
 --- @field filters string[] @If not empty, only allow events where entity_id matches any entry (with string.find)
 WebSocketSubscription = {}
-class "WebSocketSubscription" extends "WebSocketRequest" {
+class "WebSocketSubscription" mixin "MSubscribable" mixin "MRequestable" {
 	static = {
 		EVENT_STATE_CHANGED = "state_changed",
 		-- TODO: Add event types
 
+		--- @deprecated Use callbacks from MSubscribable instead
 		CALLBACK_SUBSCRIBED = "subscribed",
 		CALLBACK_UNSUBSCRIBED = "unsubscribed",
 		CALLBACK_EVENT = "event"
@@ -27,20 +27,14 @@ class "WebSocketSubscription" extends "WebSocketRequest" {
 function WebSocketSubscription:__init__(...)
 	self:resolve(...)
 	self.type = WebSocketRequest.SUBSCRIBE_EVENTS
+end
 
-	-- Compile request table
+function WebSocketSubscription:getMessage()
 	self.message = {
 		type = self.type,
 		event_type = self.eventType
 	}
-end
-
---- Attach a callback function to be run when an event of the subscribed type occurs
---- @param fn fun(self: WebSocketSubscription, event: WebSocketMessageEvent): void
---- @param id string
---- @return WebSocketRequest
-function WebSocketSubscription:doOnEvent(fn, id)
-	return self:on(WebSocketSubscription.CALLBACK_EVENT, fn, id)
+	return self.message
 end
 
 --- Add expression(s) to filter list
@@ -58,7 +52,7 @@ end
 
 --- Handle a WebSocket message
 --- @param message WebSocketMessageEvent @Message to handle
-function WebSocketSubscription:handle(message)
+function WebSocketSubscription:handleEvent(message)
 	-- If we have filters, handle them
 	if next(self.filters) then
 		local data = message:getEventData()
@@ -79,9 +73,12 @@ function WebSocketSubscription:handle(message)
 		if not match then return end
 	end
 
-	self:executeCallbacks(WebSocketSubscription.CALLBACK_EVENT, message)
+	self:executeCallbacks(MSubscribable.CALLBACK_EVENT, message)
 end
 
 configureConstructor({
-	orderedArguments = {"eventType"}
+	orderedArguments = {"eventType"},
+	argumentTypes = {
+		eventType = "string"
+	}
 })

@@ -1,0 +1,37 @@
+--- Mixin to make an object requestable
+--- @class MRequestable : MCallbackManager
+--- @field CALLBACK_RESULT string
+--- @field public type string @Request type (see [WebSocketRequest].static for available types)
+--- @field public message table @Message (as JSON-able table) to send
+--- @field public id number @Automatically assigned command ID (given at send-time)
+MRequestable = {}
+class "MRequestable" mixin "MCallbackManager" {
+	static = {
+		CALLBACK_RESULT = "result"
+	},
+
+	message = {}
+} abstract()
+
+--- Get message with type merged in
+--- @return table @Merged message
+function MRequestable:getMessage()
+	self.message.type = self.type
+	return self.message
+end
+
+--- Attach a callback function to be run when result event occurs
+--- @generic T : MRequestable
+--- @param s T
+--- @param fn fun(self: T, result: WebSocketMessageEvent): void @Callback function
+--- @param id string @Callback ID
+--- @return T @Self
+function MRequestable.doOnResult(s, fn, id)
+	return s:on(MRequestable.CALLBACK_RESULT, fn, id)
+end
+
+--- Handle result message
+--- @param message WebSocketMessageEvent @Message to handle
+function MRequestable:handleResult(message)
+	self:executeCallbacks(MRequestable.CALLBACK_RESULT, message)
+end

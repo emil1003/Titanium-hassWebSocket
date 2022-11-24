@@ -12,8 +12,8 @@
 --- @field url string @WebSocket endpoint URL (constructor arg 1)
 --- @field apiToken string @Home Assistant API Token (constructor arg 2)
 --- @field application Application @Application instance (constructor arg 3)
---- @field awaitingResult table<number, WebSocketRequest> @Table of requests awaiting a result
---- @field subscriptions table<number, WebSocketSubscription> @Table of currently kept subscriptions
+--- @field awaitingResult table<number, MRequestable> @Table of requests awaiting a result
+--- @field subscriptions table<number, MSubscribable> @Table of currently kept subscriptions
 --- @field ws http.Websocket @WebSocket handle
 --- @field isOpen boolean @Whether the WebSocket connection is open
 --- @field isAuthenticated boolean @Whether server has authenticated our API Token
@@ -123,11 +123,17 @@ end
 
 --- Send a message on the WebSocket connection. **Note**: Calling this function manually
 --- does not provide callbacks for requests and subscriptions, use :request and :subscribe instead
---- @param message WebSocketRequest|table @Message/request to be sent
+--- @param message MRequestable|table @Message/request to be sent
 --- @param noIncrement boolean @If true, don't increment and append command ID
 --- @return number @Assigned command ID (or nil if noIncrement)
 function WebSocket:send(message, noIncrement)
-	if Titanium.typeOf(message, "WebSocketRequest", true) then
+	-- If message is not a table, error
+	if type(message) ~= "table" then
+		error("Bad argument #1 to 'send' (expected table, got "..type(message)..")", 3)
+	end
+
+	-- Lift message out of requestable
+	if Titanium.mixesIn(message, MRequestable.__type) then
 		message = message.message
 	end
 
@@ -180,11 +186,18 @@ function WebSocket:authenticate(authToken)
 end
 
 --- Send a WebSocket request, and listen for responses to it
---- @param request WebSocketRequest @Request to send
+--- @param request MRequestable @Request to send
 --- @return boolean @Request sent
 function WebSocket:request(request)
-	if not Titanium.typeOf(request, "WebSocketRequest", true) then
-		error("Bad argument #1 to 'request' (expected table/WebSocketRequest, got "..type(request)..")")
+	if not Titanium.mixesIn(request, MRequestable.__type) then
+		error("Bad argument #1 to 'request' (expected MRequestable)")
+	end
+
+	-- An active subscription cannot be requested
+	if Titanium.mixesIn(request, MSubscribable.__type) then
+		if request.subscribed then
+			error("Attempt to request a subscription that is active", 3)
+		end
 	end
 
 	local id = self:send(request)
@@ -197,14 +210,16 @@ function WebSocket:request(request)
 end
 
 --- Subscribe to and keep track of a subscription
---- @param subscription WebSocketSubscription @Subscription to subscribe to
+--- @param subscription MSubscribable @Subscription to subscribe to
 --- @return boolean @Subscription was requested
 function WebSocket:subscribe(subscription)
-	if not Titanium.typeOf(subscription, "WebSocketSubscription", true) then
-		error("Bad argument #1 to 'subscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
+	if not Titanium.mixesIn(subscription, MSubscribable.__type) then
+		error("Bad argument #1 to 'subscribe' (expected MSubscribable)")
 	end
 
-	if subscription.subscribed then return false end
+	if subscription.subscribed then
+		error("Attempt to subscribe an active subscription", 3)
+	end
 
 	-- Send to get next command ID
 	local id = self:send(subscription)
@@ -212,20 +227,25 @@ function WebSocket:subscribe(subscription)
 
 	-- Add ID to subscription and insert at ID pos in subscriptions
 	subscription.id = id
-	self.subscriptions[id] = subscription
+
+	-- A subscribable is inserted into awaitingResult initially
+	-- When a result returns, it gets moved into subscriptions
+	self.awaitingResult[id] = subscription
 
 	return true
 end
 
 --- Unsubscribe from an active subscription
---- @param subscription WebSocketSubscription @Subscription to unsubscribe from
+--- @param subscription MSubscribable @Subscription to unsubscribe from
 --- @return boolean @Unsubscribe requested
 function WebSocket:unsubscribe(subscription)
-	if not Titanium.typeOf(subscription, "WebSocketSubscription" , true) then
-		error("Bad argument #1 to 'unsubscribe' (expected table/WebSocketSubscription, got "..type(subscription)..")")
+	if not Titanium.mixesIn(subscription, MSubscribable.__type) then
+		error("Bad argument #1 to 'unsubscribe' (expected MSubscribable)")
 	end
 
-	if not subscription.subscribed then return false end
+	if not subscription.subscribed then
+		error("Attempt to unsubscribe an inactive subscription", 3)
+	end
 
 	-- We make our own WebSocketRequest for unsubscribing
 	local unsubReq = WebSocketRequest(WebSocketRequest.UNSUBSCRIBE_EVENTS, {
@@ -233,14 +253,14 @@ function WebSocket:unsubscribe(subscription)
 	})
 
 	-- We need to know if unsubscribing was successful
-	unsubReq:on(WebSocketRequest.CALLBACK_RESULT, function(s, e)
+	unsubReq:doOnResult(function(s, event)
 		local sub = self.subscriptions[s.message.subscription]
-		if e.data["success"] then
-			-- Let listeners know
-			sub.subscribed = false
-			sub:executeCallbacks(WebSocketSubscription.CALLBACK_UNSUBSCRIBED)
+		if event.success then
+			-- HACK: Subscribable may think subscribing failed
+			event.success = false
+			sub:handleResult(event)
 
-			-- Sub finished, remove
+			-- Sub inactive, remove
 			self.subscriptions[s.message.subscription] = nil
 		end
 	end)
@@ -283,20 +303,18 @@ function WebSocket:handle(event)
 			-- Only when authenticated can commands be sent
 			self.isAuthenticated = true
 			self:executeCallbacks(WebSocket.CALLBACK_AUTHENTICATED)
-		elseif message.type == WebSocketMessageEvent.TYPE_EVENT then
-			-- Check if subscription was accepted
-			local sub = self.subscriptions[message.id]
-			-- SUGGEST: Callback if subscription failed?
-			if sub and message.data["success"] then
-				sub.subscribed = true
-				sub:executeCallbacks(WebSocketSubscription.CALLBACK_SUBSCRIBED)
-				return
-			end
-
-			-- Check if request got result
+		elseif message.type == WebSocketMessageEvent.TYPE_RESULT then
 			local req = self.awaitingResult[message.id]
 			if req then
-				req:executeCallbacks(WebSocketRequest.CALLBACK_RESULT, message)
+				-- If request is a subscription, move it to subscriptions
+				if Titanium.mixesIn(req, MSubscribable.__type) then
+					-- Only move if subscribing was successful
+					if message.success then
+						self.subscriptions[req.id] = req
+					end
+				end
+
+				req:handleResult(message)
 
 				-- Requests are one-shot, remove from queue
 				self.awaitingResult[req.id] = nil
@@ -305,7 +323,7 @@ function WebSocket:handle(event)
 			-- Find target subscription and execute callbacks
 			local sub = self.subscriptions[message.id]
 			if sub then
-				sub:handle(message)
+				sub:handleEvent(message)
 			end
 		end
 	elseif event:is(WebSocketSuccessEvent.EVENT_NAME) then

@@ -1,6 +1,5 @@
 --- Creates a request with data for sending to Home Assistant instance
---- @class WebSocketRequest : MCallbackManager
---- @field super MCallbackManager
+--- @class WebSocketRequest : MRequestable
 --- @field AUTH string
 --- @field SUBSCRIBE_EVENTS string
 --- @field SUBSCRIBE_TRIGGER string
@@ -11,13 +10,9 @@
 --- @field GET_CONFIG string
 --- @field GET_PANELS string
 --- @field PING string
---- @field CALLBACK_RESULT string
 --- @field VALIDATE_CONFIG string
---- @field type string @Request type (see [WebSocketRequest].static for available types)
---- @field message table @Message (as JSON-able table) to send
---- @field id number @Automatically assigned command ID (given at send-time)
 WebSocketRequest = {}
-class "WebSocketRequest" mixin "MCallbackManager" {
+class "WebSocketRequest" mixin "MRequestable" {
 	static = {
 		AUTH = "auth",
 		SUBSCRIBE_EVENTS = "subscribe_events",
@@ -31,27 +26,21 @@ class "WebSocketRequest" mixin "MCallbackManager" {
 		PING = "ping",
 		VALIDATE_CONFIG = "validate_config",
 
-		CALLBACK_RESULT = "result"
-	},
-
-	message = {}
+		--- @deprecated Use MRequestable.CALLBACK_RESULT instead
+		CALLBACK_RESULT = "callback_result"
+	}
 }
 
 --- Resolve constructor arguments
 --- @vararg any
 function WebSocketRequest:__init__(...)
 	self:resolve(...)
-	self.message.type = self.type
-end
-
---- Attach a callback function to be run when result event occurs
---- @param fn fun(self: WebSocketRequest, result: WebSocketMessageEvent): void @Callback function
---- @param id string @Callback ID
---- @return WebSocketRequest @Self
-function WebSocketRequest:doOnResult(fn, id)
-	return self:on(WebSocketRequest.CALLBACK_RESULT, fn, id)
 end
 
 configureConstructor({
-	orderedArguments = {"type", "message"}
+	orderedArguments = {"type", "message"},
+	argumentTypes = {
+		type = "string",
+		message = "table"
+	}
 })
