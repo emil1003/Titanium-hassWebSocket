@@ -1,0 +1,58 @@
+--- Dummy class for type definitions
+class "TypeDefs" {}
+
+--- Data model for a WebSocket message
+--- @shape MessageModel
+--- @field id number @Related request ID
+--- @field type string @Message type
+--- @field success boolean @Message success flag
+--- @field error ErrorModel @Message error object
+--- @field message string
+--- @field result table
+--- @field event EventModel
+
+--- Data model for an in-message error
+--- @shape ErrorModel
+--- @field message string @Error message
+--- @field code string @Error code
+
+--- @shape EventModel
+--- @field data EventData
+--- @field context ContextModel
+
+--- Data model for an "event" field of a message
+--- @shape EventData
+--- @field entity_id string @Entity ID
+--- @field new_state EntityState @New entity state
+--- @field old_state EntityState @Old entity state
+--- @field event_type string @Event type
+--- @field time_fired string @Time of event
+--- @field origin string @Origin of event
+--- @field context ContextModel @Context of event
+
+--- @shape ContextModel
+--- @field id string
+--- @field parent_id string|nil
+--- @field user_id string|nil
+
+--- Data model for the state of an entity
+--- @shape EntityState
+--- @field entity_id string @Entity ID
+--- @field state string @Entity state
+--- @field attributes table @Entity attributes
+--- @field last_changed string @Entity last changed timestamp
+--- @field last_updated string @Entity last updated timestamp
+--- @field context ContextModel
+
+--- Data model for an event fired by a
+--- [trigger subscription](https://developers.home-assistant.io/docs/api/websocket/#subscribe-to-trigger)
+--- @shape TriggerEventData
+--- @field platform string @Trigger event platform
+--- @field entity_id string @Trigger event entity_id
+--- @field from_state EntityState @Old entity state
+--- @field to_state EntityState @New entity state
+--- @field description string @Trigger event description
+
+--- Data model for a trigger request object
+--- @shape TriggerObject
+--- @field platform string @Platform of the trigger

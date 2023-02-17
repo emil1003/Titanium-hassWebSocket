@@ -4,6 +4,7 @@
 --- @field service string @Target service (see *Services.static for available services)
 --- @field entity_id string @Target entity ID
 --- @field serviceData table<string, any> @Extra data for call
+--- @overload fun(domain?: string, service?: string, entity_id?: string, serviceData?: table<string, any>): WebSocketServiceCall
 WebSocketServiceCall = {}
 class "WebSocketServiceCall" extends "WebSocketRequest" {}
 

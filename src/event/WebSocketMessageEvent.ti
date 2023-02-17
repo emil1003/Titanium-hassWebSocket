@@ -35,7 +35,7 @@ function WebSocketMessageEvent:__init__(...)
 	pcall(function()
 		-- JSON decode may fail
 		-- In that case, anyone downstream should drop this message
-		self.data = textutils.unserializeJSON(self.message)
+		self.data = --[[---@type]] textutils.unserializeJSON(self.message)
 
 		-- Depends on JSON decode, unreachable if it fails
 		self.type = self.data["type"]
@@ -57,7 +57,7 @@ end
 --- Get event data (if message is of type 'event')
 --- @return EventData @Event data
 function WebSocketMessageEvent:getEventData()
-	if self.type ~= WebSocketMessageEvent.TYPE_EVENT or not self.data then return end
+	if self.type ~= WebSocketMessageEvent.TYPE_EVENT or not self.data then return nil end
 
 	return self.data["event"]["data"]
 end

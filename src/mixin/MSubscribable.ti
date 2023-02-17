@@ -14,23 +14,19 @@ class "MSubscribable" mixin "MRequestable" {
 } abstract()
 
 --- Attach a callback function to be run when an event of the subscribed type occurs
---- @generic T : MSubscribable
---- @param s T
---- @param fn fun(self: T, event: WebSocketMessageEvent): void @Callback function
---- @param id string @Callback ID
---- @return T @Self
-function MSubscribable.doOnEvent(s, fn, id)
-	return s:on(MSubscribable.CALLBACK_EVENT, fn, id)
+--- @param fn fun(self: self, event: WebSocketMessageEvent) @Callback function
+--- @param id? string @Callback ID
+--- @return self @Self
+function MSubscribable:doOnEvent(fn, id)
+	return self:on(MSubscribable.CALLBACK_EVENT, --[[---@type]] fn, id)
 end
 
 --- Attach a callback function to be run when subscription status changes
---- @generic T : MSubscribable
---- @param s T
---- @param fn fun(self: T, status: boolean): void @Callback function
---- @param id string @Callback ID
---- @return T @Self
-function MSubscribable.doOnSubscriptionChanged(s, fn, id)
-	return s:on(MSubscribable.CALLBACK_SUBSCRIPTION_CHANGED, fn, id)
+--- @param fn fun(self: self, status: boolean) @Callback function
+--- @param id? string @Callback ID
+--- @return self @Self
+function MSubscribable:doOnSubscriptionChanged(fn, id)
+	return self:on(MSubscribable.CALLBACK_SUBSCRIPTION_CHANGED, --[[---@type]] fn, id)
 end
 
 --- Handle result message

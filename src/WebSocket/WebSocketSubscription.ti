@@ -7,6 +7,7 @@
 --- @field CALLBACK_EVENT string
 --- @field eventType string @Event type being subscribed to (see WebSocketSubscription.static for available types)
 --- @field filters string[] @If not empty, only allow events where entity_id matches any entry (with string.find)
+--- @overload fun(eventType?: string): WebSocketSubscription
 WebSocketSubscription = {}
 class "WebSocketSubscription" mixin "MSubscribable" mixin "MRequestable" {
 	static = {

@@ -21,13 +21,11 @@ function MRequestable:getMessage()
 end
 
 --- Attach a callback function to be run when result event occurs
---- @generic T : MRequestable
---- @param s T
---- @param fn fun(self: T, result: WebSocketMessageEvent): void @Callback function
---- @param id string @Callback ID
---- @return T @Self
-function MRequestable.doOnResult(s, fn, id)
-	return s:on(MRequestable.CALLBACK_RESULT, fn, id)
+--- @param fn fun(self: self, result: WebSocketMessageEvent) @Callback function
+--- @param id? string @Callback ID
+--- @return self @Self
+function MRequestable:doOnResult(fn, id)
+	return self:on(MRequestable.CALLBACK_RESULT, --[[---@type]] fn, id)
 end
 
 --- Handle result message

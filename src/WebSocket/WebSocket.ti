@@ -14,12 +14,13 @@
 --- @field application Application @Application instance (constructor arg 3)
 --- @field awaitingResult table<number, MRequestable> @Table of requests awaiting a result
 --- @field subscriptions table<number, MSubscribable> @Table of currently kept subscriptions
---- @field ws http.Websocket @WebSocket handle
+--- @field ws Websocket @WebSocket handle
 --- @field isOpen boolean @Whether the WebSocket connection is open
 --- @field isAuthenticated boolean @Whether server has authenticated our API Token
 --- @field id number @Internal command ID tracker
 --- @field hooked boolean @Whether WebSocket is hooked to an application instance
 --- @field identifier string @Instance identifier ("websocket_<ID>")
+--- @overload fun(url?: string, apiToken?: string, application?: Application): WebSocket
 WebSocket = {}
 class "WebSocket" mixin "MCallbackManager" {
 	static = {
@@ -125,7 +126,8 @@ end
 --- does not provide callbacks for requests and subscriptions, use :request and :subscribe instead
 --- @param message MRequestable|table @Message/request to be sent
 --- @param noIncrement boolean @If true, don't increment and append command ID
---- @return number @Assigned command ID (or nil if noIncrement)
+--- @return number|nil @Assigned command ID (or nil if noIncrement)
+--- @overload fun(message: MRequestable|table): number
 function WebSocket:send(message, noIncrement)
 	-- If message is not a table, error
 	if type(message) ~= "table" then
@@ -195,7 +197,10 @@ function WebSocket:request(request)
 
 	-- An active subscription cannot be requested
 	if Titanium.mixesIn(request, MSubscribable.__type) then
-		if request.subscribed then
+		---@type MSubscribable
+		local sub = --[[---@type]] request
+
+		if sub.subscribed then
 			error("Attempt to request a subscription that is active", 3)
 		end
 	end
@@ -285,7 +290,7 @@ function WebSocket:handle(event)
 	-- Handle event
 	if event:is(WebSocketMessageEvent.EVENT_NAME) then
 		--- @type WebSocketMessageEvent
-		local message = event
+		local message = --[[---@type]] event
 
 		-- If parsing failed, this message is unusable
 		if not message.type then return end
@@ -310,7 +315,7 @@ function WebSocket:handle(event)
 				if Titanium.mixesIn(req, MSubscribable.__type) then
 					-- Only move if subscribing was successful
 					if message.success then
-						self.subscriptions[req.id] = req
+						self.subscriptions[req.id] = --[[---@type]] req
 					end
 				end
 
@@ -328,7 +333,7 @@ function WebSocket:handle(event)
 		end
 	elseif event:is(WebSocketSuccessEvent.EVENT_NAME) then
 		--- @type WebSocketSuccessEvent
-		local successEvent = event
+		local successEvent = --[[---@type]] event
 		-- Avoid phantom events
 		if self.isOpen then return end
 		self.isOpen = true
@@ -339,7 +344,7 @@ function WebSocket:handle(event)
 		self:executeCallbacks(WebSocket.CALLBACK_CONNECTION_CHANGED, self.isOpen)
 	elseif event:is(WebSocketFailureEvent.EVENT_NAME) then
 		--- @type WebSocketFailureEvent
-		local failureEvent = event
+		local failureEvent = --[[---@type]] event
 
 		-- Opening WebSocket connection failed
 		self.isOpen = false

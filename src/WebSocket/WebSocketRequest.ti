@@ -11,6 +11,7 @@
 --- @field GET_PANELS string
 --- @field PING string
 --- @field VALIDATE_CONFIG string
+--- @overload fun(type?: string, message?: table): WebSocketRequest
 WebSocketRequest = {}
 class "WebSocketRequest" mixin "MRequestable" {
 	static = {
